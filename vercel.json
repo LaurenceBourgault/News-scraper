@@ -1,10 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/public/index.html"
-    },
-    {
       "source": "/api/news",
       "destination": "/api/news.js"
     }
