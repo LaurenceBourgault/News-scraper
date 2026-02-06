@@ -1,0 +1,18 @@
+{
+  "name": "news-scraper",
+  "version": "1.0.0",
+  "description": "Business news aggregator for talent and tech insights",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["news", "scraper", "rss"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "rss-parser": "^3.13.0",
+    "node-fetch": "^2.7.0"
+  }
+}

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business News Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .last-updated {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .refresh-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            padding: 40px;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .category-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+        .category-title {
+            font-size: 1.4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid #667eea;
+            font-weight: 700;
+        }
+
+        .article {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .article:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .article-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .article-title a {
+            color: #1f2937;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .article-title a:hover {
+            color: #667eea;
+        }
+
+        .article-meta {
+            font-size: 0.85rem;
+            color: #6b7280;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .article-date {
+            font-weight: 500;
+        }
+
+        .no-articles {
+            color: #6b7280;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .category-card {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Business Intelligence News</h1>
+            <p class="subtitle">Your daily digest on talent, tech, and private equity</p>
+            <p class="last-updated" id="lastUpdated">Last updated: Loading...</p>
+            <button class="refresh-btn" onclick="loadNews()">🔄 Refresh News</button>
+        </header>
+
+        <div id="newsContainer" class="loading">
+            Loading your personalized news feed...
+        </div>
+    </div>
+
+    <script>
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+            
+            if (diffInHours < 1) return 'Just now';
+            if (diffInHours < 24) return `${diffInHours}h ago`;
+            if (diffInHours < 48) return 'Yesterday';
+            
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+            });
+        }
+
+        async function loadNews() {
+            const container = document.getElementById('newsContainer');
+            container.innerHTML = '<div class="loading">Loading fresh news...</div>';
+
+            try {
+                const response = await fetch('/api/news');
+                const newsData = await response.json();
+
+                let html = '<div class="news-grid">';
+
+                for (const [category, articles] of Object.entries(newsData)) {
+                    html += `
+                        <div class="category-card">
+                            <h2 class="category-title">${category}</h2>
+                    `;
+
+                    if (articles && articles.length > 0) {
+                        articles.forEach(article => {
+                            html += `
+                                <div class="article">
+                                    <div class="article-title">
+                                        <a href="${article.link}" target="_blank" rel="noopener noreferrer">
+                                            ${article.title}
+                                        </a>
+                                    </div>
+                                    <div class="article-meta">
+                                        <span class="article-date">${formatDate(article.pubDate)}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += '<p class="no-articles">No recent articles found</p>';
+                    }
+
+                    html += '</div>';
+                }
+
+                html += '</div>';
+                container.innerHTML = html;
+
+                // Update last updated time
+                const lastUpdated = new Date().toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+                document.getElementById('lastUpdated').textContent = `Last updated: ${lastUpdated}`;
+
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="loading" style="color: #ef4444;">
+                        ❌ Error loading news. Please try again.
+                    </div>
+                `;
+                console.error('Error:', error);
+            }
+        }
+
+        // Load news when page loads
+        loadNews();
+
+        // Auto-refresh every 10 minutes
+        setInterval(loadNews, 10 * 60 * 1000);
+    </script>
+</body>
+</html>
