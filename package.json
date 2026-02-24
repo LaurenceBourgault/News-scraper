@@ -1,18 +1,21 @@
 {
   "name": "news-scraper",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Business news aggregator for talent and tech insights",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "npx nodemon server.js",
+    "test:local": "node test-local.js",
+    "refresh": "node -e \"const {fetchAllNews}=require('./lib/fetcher'); fetchAllNews({force:true}).then(d=>{console.log('Done:',d.stats)}).catch(console.error)\""
   },
   "keywords": ["news", "scraper", "rss"],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
-    "rss-parser": "^3.13.0",
-    "node-fetch": "^2.7.0"
+    "node-cron": "^3.0.3",
+    "node-fetch": "^2.7.0",
+    "rss-parser": "^3.13.0"
   }
 }

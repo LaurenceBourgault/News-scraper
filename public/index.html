@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-hover: #222632;
+      --border: #2a2e3d;
+      --text: #e4e6ed;
+      --text-muted: #8b8fa3;
+      --accent: #6c8cff;
+      --accent-dim: rgba(108, 140, 255, 0.12);
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 17, 23, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 0;
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .logo h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--surface);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-dot.stale { background: var(--warning); }
+    .status-dot.error { background: var(--danger); animation: none; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(108, 140, 255, 0.25);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-refresh:hover { background: rgba(108, 140, 255, 0.2); }
+    .btn-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-refresh svg {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.3s;
+    }
+
+    .btn-refresh.spinning svg {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Category Nav */
+    .nav {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 24px 0;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .nav-pill {
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .nav-pill:hover {
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    .nav-pill.active {
+      color: var(--accent);
+      background: var(--accent-dim);
+      border-color: rgba(108, 140, 255, 0.25);
+    }
+
+    .nav-pill .count {
+      display: inline-block;
+      margin-left: 5px;
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+
+    /* Main content */
+    .main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 24px 60px;
+    }
+
+    /* Category sections */
+    .category-section {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .category-section.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .category-header {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .category-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .category-header .article-count {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Article grid */
+    .articles {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 14px;
+    }
+
+    .article-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.2s;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .article-card:hover {
+      background: var(--surface-hover);
+      border-color: rgba(108, 140, 255, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .article-source {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+    }
+
+    .article-title {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.45;
+      color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .article-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .article-date {
+      margin-top: auto;
+      font-size: 12px;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+
+    /* Loading state */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      gap: 16px;
+    }
+
+    .loader {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .loading-text {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* Empty state */
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-value {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .articles { grid-template-columns: 1fr; }
+      .header-inner { flex-direction: column; align-items: flex-start; }
+      .nav { gap: 4px; }
+      .nav-pill { padding: 6px 12px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">N</div>
+        <h1>News Dashboard</h1>
+      </div>
+      <div class="header-meta">
+        <div class="status-badge" id="status-badge">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="status-text">Loading...</span>
+        </div>
+        <button class="btn-refresh" id="btn-refresh" onclick="refreshNews()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="nav" id="nav"></nav>
+
+  <main class="main" id="main">
+    <div class="loading" id="loading">
+      <div class="loader"></div>
+      <div class="loading-text">Fetching latest news...</div>
+    </div>
+  </main>
+
+  <script>
+    let newsData = null;
+    let activeCategory = null;
+
+    async function loadNews() {
+      try {
+        const res = await fetch('/api/news');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        newsData = await res.json();
+        render();
+        updateStatus(newsData);
+      } catch (err) {
+        document.getElementById('main').innerHTML = `
+          <div class="empty">
+            <div class="empty-icon">!</div>
+            <p>Failed to load news. Is the server running?</p>
+            <p style="font-size:12px;margin-top:8px;opacity:0.6">${err.message}</p>
+          </div>`;
+        setStatus('error', 'Error');
+      }
+    }
+
+    async function refreshNews() {
+      const btn = document.getElementById('btn-refresh');
+      btn.disabled = true;
+      btn.classList.add('spinning');
+      setStatus('stale', 'Refreshing...');
+
+      try {
+        const res = await fetch('/api/news/refresh', { method: 'POST' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await loadNews();
+      } catch (err) {
+        setStatus('error', 'Refresh failed');
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('spinning');
+      }
+    }
+
+    function render() {
+      const { categories } = newsData;
+      const catNames = Object.keys(categories);
+
+      if (!activeCategory || !categories[activeCategory]) {
+        activeCategory = catNames[0];
+      }
+
+      renderNav(catNames, categories);
+      renderArticles(categories);
+    }
+
+    function renderNav(catNames, categories) {
+      const nav = document.getElementById('nav');
+      nav.innerHTML = catNames.map(name => {
+        const count = categories[name]?.length || 0;
+        const cls = name === activeCategory ? 'active' : '';
+        return `<button class="nav-pill ${cls}" onclick="switchCategory('${esc(name)}')">${esc(name)}<span class="count">${count}</span></button>`;
+      }).join('');
+    }
+
+    function renderArticles(categories) {
+      const main = document.getElementById('main');
+      const stats = newsData.stats;
+
+      let statsHtml = '';
+      if (stats) {
+        const items = [];
+        items.push(`<span class="stat-item">Feeds: <span class="stat-value">${stats.feedsSucceeded}/${stats.feedsTotal} OK</span></span>`);
+        items.push(`<span class="stat-item">Fetch time: <span class="stat-value">${(stats.fetchTimeMs / 1000).toFixed(1)}s</span></span>`);
+        if (stats.feedsFailed > 0) {
+          items.push(`<span class="stat-item" style="color:var(--warning)">Failed: <span class="stat-value">${stats.feedsFailed}</span></span>`);
+        }
+        statsHtml = `<div class="stats-bar">${items.join('')}</div>`;
+      }
+
+      let sectionsHtml = '';
+      for (const [name, articles] of Object.entries(categories)) {
+        const isActive = name === activeCategory;
+        if (!articles.length) {
+          sectionsHtml += `
+            <section class="category-section ${isActive ? 'active' : ''}" data-category="${esc(name)}">
+              <div class="category-header"><h2>${esc(name)}</h2></div>
+              <div class="empty"><div class="empty-icon">O</div><p>No recent articles found</p></div>
+            </section>`;
+          continue;
+        }
+
+        const cardsHtml = articles.map(a => {
+          const source = esc(a.source || 'News');
+          const title = esc(cleanTitle(a.title));
+          const desc = esc(a.description || '');
+          const date = formatDate(a.pubDate);
+          const href = esc(a.link);
+          return `
+            <a class="article-card" href="${href}" target="_blank" rel="noopener">
+              <span class="article-source">${source}</span>
+              <span class="article-title">${title}</span>
+              ${desc ? `<span class="article-desc">${desc}</span>` : ''}
+              <span class="article-date">${date}</span>
+            </a>`;
+        }).join('');
+
+        sectionsHtml += `
+          <section class="category-section ${isActive ? 'active' : ''}" data-category="${esc(name)}">
+            <div class="category-header">
+              <h2>${esc(name)}</h2>
+              <span class="article-count">${articles.length} article${articles.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="articles">${cardsHtml}</div>
+          </section>`;
+      }
+
+      main.innerHTML = statsHtml + sectionsHtml;
+    }
+
+    function switchCategory(name) {
+      activeCategory = name;
+      document.querySelectorAll('.nav-pill').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.category-section').forEach(el => el.classList.remove('active'));
+
+      const pills = document.querySelectorAll('.nav-pill');
+      pills.forEach(el => {
+        if (el.textContent.startsWith(name)) el.classList.add('active');
+      });
+      const section = document.querySelector(`[data-category="${CSS.escape(name)}"]`);
+      if (section) section.classList.add('active');
+    }
+
+    function updateStatus(data) {
+      if (!data.lastUpdated) return setStatus('error', 'Unknown');
+      const updated = new Date(data.lastUpdated);
+      const ago = timeAgo(updated);
+      setStatus('ok', `Updated ${ago}`);
+    }
+
+    function setStatus(state, text) {
+      const dot = document.getElementById('status-dot');
+      const label = document.getElementById('status-text');
+      dot.className = 'status-dot' + (state !== 'ok' ? ` ${state}` : '');
+      label.textContent = text;
+    }
+
+    function cleanTitle(title) {
+      if (!title) return '';
+      return title.replace(/ - [^-]+$/, '');
+    }
+
+    function formatDate(str) {
+      if (!str) return '';
+      try {
+        const d = new Date(str);
+        const now = new Date();
+        const diffMs = now - d;
+        const diffHrs = diffMs / (1000 * 60 * 60);
+
+        if (diffHrs < 1) return `${Math.round(diffMs / 60000)}m ago`;
+        if (diffHrs < 24) return `${Math.round(diffHrs)}h ago`;
+        if (diffHrs < 48) return 'Yesterday';
+
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+      } catch {
+        return str;
+      }
+    }
+
+    function timeAgo(date) {
+      const s = Math.round((Date.now() - date) / 1000);
+      if (s < 60) return 'just now';
+      if (s < 3600) return `${Math.round(s / 60)}m ago`;
+      if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+      return `${Math.round(s / 86400)}d ago`;
+    }
+
+    function esc(str) {
+      if (!str) return '';
+      const el = document.createElement('span');
+      el.textContent = str;
+      return el.innerHTML;
+    }
+
+    loadNews();
+  </script>
+</body>
+</html>
